@@ -35,6 +35,8 @@ async def upload_video(file: UploadFile = File(...)):
 
     # 2. Compute vectors and 3. Upload to Qdrant
     vectors = compute_all_histograms(frames_dir)
+    if not vectors:
+        return {"message": "Could not compute feature vectors for the extracted frames."}
     upload_vectors_to_qdrant(vectors)
 
     # 4. Clean up temporary files
@@ -45,13 +47,36 @@ async def upload_video(file: UploadFile = File(...)):
     except OSError as e:
         print(f"Error during cleanup: {e}")
 
-    return {"message": f"{extracted_count} frames extracted and indexed successfully."}
+    # 5. Return a sample vector for the user to test with
+    sample_vector_data = {
+        "filename": vectors[0][0],
+        "vector": vectors[0][1].tolist()
+    }
+
+    return {
+        "message": f"{extracted_count} frames extracted and indexed successfully.",
+        "sample_query": sample_vector_data
+    }
 
 @app.post("/get-vector/")
-async def get_vector(item: QueryImage):
-    """Computes and returns the feature vector for a given image."""
-    vector = compute_histogram(item.image_path)
-    return {"filename": item.image_path, "vector": vector.tolist()}
+async def get_vector(file: UploadFile = File(...)):
+    """
+    Accepts an image file upload and returns its computed feature vector.
+    This is the recommended way to get a vector for querying.
+    """
+    os.makedirs("temp", exist_ok=True)
+    temp_path = f"temp/{file.filename}"
+    with open(temp_path, "wb") as f:
+        f.write(await file.read())
+    
+    vector = compute_histogram(temp_path)
+
+    try:
+        os.remove(temp_path)
+    except OSError as e:
+        print(f"Error during cleanup: {e}")
+
+    return {"filename": file.filename, "vector": vector.tolist()}
 
 @app.post("/query-similar/")
 async def query_similar(item: QueryVector):
