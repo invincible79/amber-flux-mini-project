@@ -21,6 +21,7 @@ async def root():
 @app.post("/upload-video/")
 async def upload_video(file: UploadFile = File(...)):
     video_path = f"temp/{file.filename}"
+    os.makedirs("temp", exist_ok=True)
     with open(video_path, "wb") as f:
         f.write(await file.read())
 
