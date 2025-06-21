@@ -1,63 +1,52 @@
 # Video Feature Extraction and Retrieval API
 
-This is a FastAPI application that allows you to upload a video, extract frames, compute feature vectors for each frame, store them in a Qdrant vector database, and then query for similar frames.
+This is a FastAPI application that allows you to upload a video, extracts frames, computes feature vectors for each frame, stores them in a Qdrant vector database, and then query for similar frames.
+
+## Try the Live API
+
+You are welcome to test the live, deployed application using the interactive Swagger UI.
+
+**Live API Docs Link:** `https://amber-flux-mini-project-pushkarmahajan.onrender.com/docs`
+
+
+**Note:** This is a free-tier deployment. The application will "go to sleep" after a period of inactivity and may take up to a minute to wake up on the first request.
+
+## How It Works
+
+This application is built with a modern, stateless architecture suitable for cloud deployment:
+
+-   **Backend**: FastAPI handles the web server and API endpoints.
+-   **Video & Image Processing**: OpenCV (`cv2`) is used to extract frames from videos and compute color histograms as feature vectors.
+-   **Vector Database**: Feature vectors are stored and queried in a managed [Qdrant Cloud](https://cloud.qdrant.io/) instance.
+-   **Deployment**: The application is hosted on [Render](https://render.com), which automatically deploys from the `main` branch of this repository.
 
 ## Project Structure
 
-- `main.py`: The main FastAPI application file containing the API endpoints.
-- `utils/`: A directory containing helper modules for video processing, feature extraction, and Qdrant client.
-- `frames/`: The default directory where extracted frames are saved.
-- `config.py`: The configuration file for the application.
-- `requirements.txt`: A file containing all the project dependencies.
+This repository contains the source code for the application:
 
-## Setup
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/your-username/your-repo-name.git
-    cd your-repo-name
-    ```
-
-2.  **Create a virtual environment and install dependencies:**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\\Scripts\\activate`
-    pip install -r requirements.txt
-    ```
-
-3.  **Run the FastAPI application:**
-    ```bash
-    uvicorn main:app --reload
-    ```
-
-The application will be running at `http://127.0.0.1:8000`.
+-   `main.py`: The main FastAPI application file containing the API endpoints.
+-   `utils/`: A directory containing helper modules for video processing, feature extraction, and the Qdrant client.
+-   `config.py`: The configuration file. On the deployed version, secrets are managed via environment variables.
+-   `requirements.txt`: A file containing all the project dependencies.
 
 ## API Endpoints
 
-You can access the API documentation at `http://127.0.0.1:8000/docs`.
-
-- **`POST /upload-video/`**: Uploads a video file and extracts its frames.
-- **`POST /index-frames/`**: Computes feature vectors for all extracted frames and stores them in the vector database.
-- **`POST /get-vector/`**: Computes and returns the feature vector for a single image. This is useful for getting a vector to use in the query endpoint.
+- **`POST /upload-video/`**: The primary endpoint. Uploads a video, extracts frames, computes feature vectors, and indexes them in the Qdrant database all in one step.
+- **`POST /get-vector/`**: A helper endpoint that accepts an image file upload and returns its computed feature vector.
 - **`POST /query-similar/`**: Queries the database using a provided feature vector to find similar frames.
 
-## Usage
+## How to Test the Live Application
 
-The intended workflow is a 4-step process:
+Here is a simple, 2-step process to test the core functionality directly from the live API documentation:
 
-1.  **Upload a video:**
-    Send a `POST` request to `/upload-video/` with a video file (e.g., `.mp4`).
+1.  **Upload a Video & Get a Sample Vector:**
+    - Navigate to the `POST /upload-video/` endpoint.
+    - Click "Try it out", upload a video file (e.g., `.mp4`), and click "Execute".
+    - The response will contain a `sample_query` object. **Copy the `vector` array** from this object. It looks like `[0.1, 0.2, ...]`.
 
-2.  **Index the frames:**
-    Send a `POST` request to `/index-frames/`. This processes all the frames in the `frames/` directory and populates the vector database.
+2.  **Query for Similar Frames:**
+    - Navigate to the `POST /query-similar/` endpoint.
+    - Click "Try it out". In the request body, **paste the vector you copied** from the previous step.
+    - Click "Execute". The API will return a list of the most similar frames from the video you just uploaded.
 
-3.  **Get a query vector:**
-    To perform a similarity search, you first need a vector to search with.
-    - Send a `POST` request to `/get-vector/`.
-    - In the request body, provide the path to one of the extracted frames (e.g., `{"image_path": "frames/frame_00000.jpg"}`).
-    - Copy the `vector` array from the response.
-
-4.  **Query for similar frames:**
-    - Send a `POST` request to `/query-similar/`.
-    - In the request body, paste the vector you copied in the previous step (e.g., `{"vector": [0.1, 0.2, ...]}`).
-    - The API will return a list of the most similar frames from the database. 
+The `/get-vector` endpoint is also available as a helper if you wish to provide your own image file instead of using the sample from the video upload. 
