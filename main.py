@@ -20,17 +20,39 @@ async def root():
 
 @app.post("/upload-video/")
 async def upload_video(file: UploadFile = File(...)):
-    video_path = f"temp/{file.filename}"
+    """Uploads a video, extracts frames, computes vectors, and indexes them in one go."""
     os.makedirs("temp", exist_ok=True)
+    video_path = f"temp/{file.filename}"
+    
     with open(video_path, "wb") as f:
         f.write(await file.read())
 
-    extracted_count = extract_frames(video_path, output_dir="frames", interval=1)
-    return {"message": "Frames extracted", "frames_count": extracted_count}
+    # 1. Extract frames
+    frames_dir = "frames"
+    extracted_count = extract_frames(video_path, output_dir=frames_dir, interval=1)
+    if extracted_count == 0:
+        return {"message": "No frames were extracted from the video."}
+
+    # 2. Compute vectors and 3. Upload to Qdrant
+    vectors = compute_all_histograms(frames_dir)
+    upload_vectors_to_qdrant(vectors)
+
+    # 4. Clean up temporary files
+    try:
+        os.remove(video_path)
+        for frame_file in os.listdir(frames_dir):
+            os.remove(os.path.join(frames_dir, frame_file))
+    except OSError as e:
+        print(f"Error during cleanup: {e}")
+
+    return {"message": f"{extracted_count} frames extracted and indexed successfully."}
 
 @app.post("/index-frames/")
 async def index_frames():
+    """Manually index any frames that might exist on the filesystem."""
     vectors = compute_all_histograms("frames")
+    if not vectors:
+        return {"message": "No frames found to index."}
     upload_vectors_to_qdrant(vectors)
     return {"message": "Frames indexed successfully"}
 
