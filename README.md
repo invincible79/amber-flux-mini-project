@@ -50,3 +50,7 @@ Here is a simple, 2-step process to test the core functionality directly from th
     - Click "Execute". The API will return a list of the most similar frames from the video you just uploaded.
 
 The `/get-vector` endpoint is also available as a helper if you wish to provide your own image file instead of using the sample from the video upload. 
+
+## Example Usage Visuals :
+![image](https://github.com/user-attachments/assets/289f3d76-0048-41aa-8660-e551796934ba)
+
