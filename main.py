@@ -47,15 +47,6 @@ async def upload_video(file: UploadFile = File(...)):
 
     return {"message": f"{extracted_count} frames extracted and indexed successfully."}
 
-@app.post("/index-frames/")
-async def index_frames():
-    """Manually index any frames that might exist on the filesystem."""
-    vectors = compute_all_histograms("frames")
-    if not vectors:
-        return {"message": "No frames found to index."}
-    upload_vectors_to_qdrant(vectors)
-    return {"message": "Frames indexed successfully"}
-
 @app.post("/get-vector/")
 async def get_vector(item: QueryImage):
     """Computes and returns the feature vector for a given image."""
